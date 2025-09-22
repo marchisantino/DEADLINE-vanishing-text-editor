@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEADLINE Editor</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Uncut+Sans:wght@300;400;500&display=swap');
+        
+        :root {
+            --bg: #faf8f5;
+            --surface: #ffffff;
+            --primary: #2d1b14;
+            --accent: #d97706;
+            --accent-light: #f59e0b;
+            --text: #1c1917;
+            --text-soft: #57534e;
+            --text-muted: #a8a29e;
+            --border: #f3f4f6;
+            --success: #059669;
+            --danger: #dc2626;
+            --neutral: #6b7280;
+            --font-serif: 'Crimson Text', 'Times New Roman', serif;
+            --font-sans: 'Uncut Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        [data-theme="dark"] {
+            --bg: #1c1917;
+            --surface: #2d2a27;
+            --primary: #faf8f5;
+            --accent: #f59e0b;
+            --accent-light: #eab308;
+            --text: #f5f5f4;
+            --text-soft: #a8a29e;
+            --text-muted: #78716c;
+            --border: #3c3a37;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --neutral: #9ca3af;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--font-serif);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .fullscreen-btn {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            width: 36px;
+            height: 36px;
+            background: transparent;
+            border: none;
+            color: var(--text-soft);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            border-radius: 6px;
+        }
+
+        .fullscreen-btn:hover {
+            color: var(--accent);
+            background: rgba(217, 119, 6, 0.1);
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 720px;
+            display: flex;
+            flex-direction: column;
+            min-height: 80vh;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4rem;
+            padding-bottom: 1rem;
+        }
+        
+        .logo {
+            font-family: var(--font-sans);
+            font-size: 1.25rem;
+            font-weight: 300;
+            color: var(--primary);
+            letter-spacing: 0.1em;
+            transition: color 0.3s ease;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--surface);
+            color: var(--text-soft);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn:hover:not(:disabled) {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
+        }
+        
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: var(--accent-light);
+            border-color: var(--accent-light);
+            color: var(--primary);
+            box-shadow: 0 4px 16px rgba(217, 119, 6, 0.4);
+        }
+        
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .title-input-wrapper {
+            position: relative;
+        }
+
+        .title-input-wrapper::before,
+        .title-input-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 4rem;
+            pointer-events: none;
+            background-color: var(--bg);
+            transition: background-color 0.3s ease;
+            z-index: 2;
+        }
+
+        .title-input-wrapper::before {
+            left: 0;
+            -webkit-mask-image: linear-gradient(to right, black, transparent);
+            mask-image: linear-gradient(to right, black, transparent);
+        }
+        
+        .title-input-wrapper::after {
+            right: 0;
+            -webkit-mask-image: linear-gradient(to left, black, transparent);
+            mask-image: linear-gradient(to left, black, transparent);
+        }
+        
+        .title-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            font-size: 2.75rem;
+            font-weight: 400;
+            color: var(--text);
+            font-family: var(--font-serif);
+            outline: none;
+            margin-bottom: 2rem;
+            line-height: 1.2;
+            transition: color 0.3s ease;
+            text-align: center;
+
+        }
+        
+        .title-input::placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .textarea-wrapper {
+            flex: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 400px;
+        }
+        
+        .textarea-wrapper::before,
+        .textarea-wrapper::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 3rem;
+            z-index: 1;
+            pointer-events: none;
+            background-color: var(--bg);
+            transition: background-color 0.3s ease;
+        }
+
+        .textarea-wrapper::before {
+            top: 0;
+            -webkit-mask-image: linear-gradient(to bottom, black, transparent);
+            mask-image: linear-gradient(to bottom, black, transparent);
+        }
+
+        .textarea-wrapper::after {
+            bottom: 0;
+            -webkit-mask-image: linear-gradient(to top, black, transparent);
+            mask-image: linear-gradient(to top, black, transparent);
+        }
+        
+        .text-area {
+            flex: 1;
+            background: transparent;
+            border: none;
+            font-size: 1.25rem;
+            font-weight: 400;
+            color: var(--text);
+            font-family: var(--font-serif);
+            line-height: 1.8;
+            resize: none;
+            outline: none;
+            width: 100%;
+            transition: opacity 0.5s ease-out, filter 0.5s ease-out, color 0.3s ease;
+            padding: 3rem 0.5rem 7rem;
+            scrollbar-width: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            scroll-padding-bottom: 3rem;
+        }
+
+        .text-area::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .text-area::placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+            opacity: 1 !important; 
+            filter: none !important;
+        }
+        
+        .status-indicator {
+            position: absolute;
+            z-index: 20;
+            top: -0.5rem;
+            right: 0;
+            font-family: var(--font-sans);
+            font-size: 0.75rem;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.4s ease;
+        }
+
+        .status-indicator.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .status-indicator.hide-down {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        .status-indicator.shift-up {
+            transform: translateY(-1.5rem);
+        }
+
+        #safeIndicator {
+             color: var(--success);
+        }
+        
+        #lostIndicator {
+            color: var(--danger);
+        }
+
+        #copiedIndicator {
+            color: var(--neutral);
+        }
+
+        .auto-theme-icon {
+            font-family: var(--font-serif);
+            font-size: 1.2rem; 
+            font-weight: 600;
+            line-height: 1;
+        }
+    </style>
+</head>
+<body>
+    <button class="fullscreen-btn" id="fullscreenBtn" title="Fullscreen">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+        </svg>
+    </button>
+
+    <div class="container">
+        <div class="header">
+            <div class="logo">DEADLINE</div>
+            <div class="actions">
+                <button class="btn" id="themeBtn" title="Theme">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="4"/>
+                        <path d="m12 2 0 2"/>
+                        <path d="m12 20 0 2"/>
+                        <path d="m4.93 4.93 1.41 1.41"/>
+                        <path d="m17.66 17.66 1.41 1.41"/>
+                        <path d="M2 12h2"/>
+                        <path d="M20 12h2"/>
+                        <path d="m6.34 17.66-1.41 1.41"/>
+                        <path d="m19.07 4.93-1.41 1.41"/>
+                    </svg>
+                </button>
+                <button class="btn btn-primary" id="copyBtn" disabled title="Copy">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="13" height="13" x="9" y="9" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="editor-container">
+            <div class="status-indicator" id="safeIndicator">Safe</div> 
+            <div class="status-indicator" id="lostIndicator">Progress lost</div>
+            <div class="status-indicator" id="copiedIndicator">Copied to clipboard</div>
+            
+            <div class="title-input-wrapper">
+                <input 
+                    type="text" 
+                    class="title-input" 
+                    id="titleInput" 
+                    placeholder="Title"
+                />
+            </div>
+            
+            <div class="textarea-wrapper">
+                <textarea 
+                    class="text-area" 
+                    id="textArea" 
+                    placeholder="Start writing. Your text will disappear if you stop for more than 10 seconds during the first 3 minutes..."
+                ></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class DeadlineEditor {
+            constructor() {
+                this.titleInput = document.getElementById('titleInput');
+                this.textArea = document.getElementById('textArea');
+                this.copyBtn = document.getElementById('copyBtn');
+                this.fullscreenBtn = document.getElementById('fullscreenBtn');
+                this.themeBtn = document.getElementById('themeBtn');
+                this.safeIndicator = document.getElementById('safeIndicator');
+                this.lostIndicator = document.getElementById('lostIndicator');
+                this.copiedIndicator = document.getElementById('copiedIndicator');
+                
+                this.isSafe = false; 
+                this.currentTheme = 'auto';
+                this.themes = ['light', 'dark', 'auto'];
+                
+                this.fadeTimeout = null;
+                this.fadeInterval = null;
+                
+                this.originalPlaceholderOpacity = this.textArea.style.opacity;
+                this.originalPlaceholderFilter = this.textArea.style.filter;
+
+                this.DANGER_PERIOD = 0.2 * 60 * 1000;
+                this.FADE_DELAY = 10 * 1000;
+                
+                this.init();
+            }
+            
+            init() {
+                this.loadState();
+                this.initTheme();
+                this.bindEvents();
+                this.preventTextOperations();
+            }
+
+            bindEvents() {
+                this.textArea.addEventListener('input', (e) => {
+                    if (e.inputType && (
+                        e.inputType.includes('delete') || 
+                        e.inputType.includes('cut') ||
+                        e.inputType === 'historyUndo' ||
+                        e.inputType === 'historyRedo'
+                    )) {
+                        this.persistState();
+                        if (this.textArea.value.length === 0) {
+                            this.resetSession(false);
+                        }
+                        return;
+                    }
+                    this.onTextChange();
+                });
+
+                this.titleInput.addEventListener('input', () => this.persistState());
+                this.copyBtn.addEventListener('click', () => this.copyNote());
+                this.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+                this.themeBtn.addEventListener('click', () => this.cycleTheme());
+
+                document.addEventListener('fullscreenchange', () => this.updateFullscreenIcon());
+                document.addEventListener('webkitfullscreenchange', () => this.updateFullscreenIcon());
+
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                    if (this.currentTheme === 'auto') {
+                        this.setTheme('auto');
+                    }
+                });
+            }
+
+            preventTextOperations() {
+                this.textArea.addEventListener('selectstart', (e) => e.preventDefault());
+                this.textArea.addEventListener('mousedown', (e) => {
+                    if (e.detail > 1) e.preventDefault();
+                });
+                this.textArea.addEventListener('contextmenu', (e) => e.preventDefault());
+                
+                this.textArea.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && ['a', 'c', 'v', 'x'].includes(e.key.toLowerCase())) {
+                        e.preventDefault();
+                    }
+                });
+            }
+            
+            onTextChange() {
+                this.resetFading();
+
+                const hasContent = this.textArea.value.length > 0;
+                let typingStartTime = sessionStorage.getItem('deadlineTypingStartTime');
+
+                if (hasContent) {
+                    if (!typingStartTime) {
+                        sessionStorage.setItem('deadlineTypingStartTime', Date.now());
+                        this.checkProtection();
+                    }
+                    if (!this.isSafe) { 
+                        this.startFading();
+                    }
+                }
+                
+                if (!hasContent) {
+                    this.resetSession(false);
+                    return;
+                }
+                
+                sessionStorage.setItem('deadlineLastInputTime', Date.now());
+                this.persistState();
+            }
+
+            checkProtection() {
+                setTimeout(() => {
+                    const typingStartTime = sessionStorage.getItem('deadlineTypingStartTime');
+                    if (typingStartTime && !this.isSafe) { 
+                        const elapsed = Date.now() - parseInt(typingStartTime, 10);
+                        if (elapsed >= this.DANGER_PERIOD) {
+                            this.makeTextSafe();
+                        } else {
+                            if (this.textArea.value.length > 0) {
+                                this.checkProtection();
+                            }
+                        }
+                    }
+                }, 1000);
+            }
+
+            startFading() {
+                if (this.isSafe) return; 
+
+                clearTimeout(this.fadeTimeout);
+                clearInterval(this.fadeInterval);
+                
+                this.textArea.style.opacity = '1';
+                this.textArea.style.filter = 'blur(0px)';
+                
+                this.fadeTimeout = setTimeout(() => {
+                    let startTime = Date.now();
+                    
+                    this.fadeInterval = setInterval(() => {
+                        if (this.textArea.value.length === 0) {
+                            clearInterval(this.fadeInterval);
+                            this.resetSession(false);
+                            return;
+                        }
+                        
+                        const elapsed = Date.now() - startTime;
+                        const progress = Math.min(elapsed / this.FADE_DELAY, 1);
+                        
+                        this.textArea.style.opacity = 1 - progress;
+                        
+                        const lastFiveSeconds = this.FADE_DELAY - 5000;
+                        if (elapsed >= lastFiveSeconds) {
+                            const blurProgress = (elapsed - lastFiveSeconds) / 5000;
+                            this.textArea.style.filter = `blur(${blurProgress * 3}px)`;
+                        }
+                        
+                        if (progress >= 1) {
+                            clearInterval(this.fadeInterval);
+                            this.textArea.value = '';
+                            this.showLostIndicator();
+                            this.resetSession(false);
+                        }
+                    }, 50);
+                }, 100);
+            }
+
+            resetFading() {
+                clearTimeout(this.fadeTimeout);
+                clearInterval(this.fadeInterval);
+                this.textArea.style.opacity = '1';
+                this.textArea.style.filter = 'blur(0px)';
+            }
+
+            makeTextSafe() { 
+                this.isSafe = true;
+                this.copyBtn.disabled = false;
+                this.safeIndicator.classList.add('show');
+                
+                this.resetFading();
+                this.persistState();
+            }
+
+            showStatusIndicator(indicator, shouldShiftOthers = false) {
+                document.querySelectorAll('.status-indicator.show').forEach(el => {
+                    if (el !== indicator) {
+                         el.classList.add('hide-down'); 
+                         el.classList.remove('show');
+                    }
+                });
+
+                if (shouldShiftOthers) {
+                    document.querySelectorAll('.status-indicator').forEach(el => {
+                        if (el !== indicator && el.id !== this.safeIndicator.id) {
+                            el.classList.remove('hide-down');
+                            el.classList.remove('show');
+                            el.classList.add('shift-up');
+                        } else if (el === this.safeIndicator) {
+                             el.classList.add('shift-up');
+                        }
+                    });
+                } else {
+                    document.querySelectorAll('.status-indicator.shift-up').forEach(el => {
+                        el.classList.remove('shift-up');
+                    });
+                }
+
+                indicator.classList.remove('hide-down');
+                indicator.classList.add('show');
+                
+                setTimeout(() => {
+                    indicator.classList.remove('show');
+                    indicator.classList.add('hide-down');
+                    
+                    if (shouldShiftOthers) {
+                        document.querySelectorAll('.status-indicator.shift-up').forEach(el => {
+                            el.classList.remove('shift-up');
+                            
+                            if (el === this.safeIndicator) { 
+                                el.classList.add('show');
+                                el.classList.remove('hide-down');
+                            }
+                        });
+                    }
+                    
+                    setTimeout(() => {
+                        indicator.classList.remove('hide-down');
+                    }, 400);
+                }, 3000);
+            }
+
+            showLostIndicator() {
+                this.showStatusIndicator(this.lostIndicator);
+            }
+
+            showCopiedIndicator() {
+                const shouldShift = this.safeIndicator.classList.contains('show');
+                this.showStatusIndicator(this.copiedIndicator, shouldShift);
+            }
+
+            async copyNote() {
+                if (!this.isSafe || !this.textArea.value.trim()) return; 
+                
+                try {
+                    const title = this.titleInput.value.trim() || 'Untitled';
+                    const content = this.textArea.value.trim();
+                    const timestamp = new Date().toLocaleString('en-US');
+                    const markdown = `# ${title}\n\n${content}\n\n---\n*${timestamp}*`;
+                    
+                    await navigator.clipboard.writeText(markdown);
+                    this.showCopiedIndicator();
+                } catch (error) {
+                    console.error('Error copying:', error);
+                }
+            }
+
+            toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                } else {
+                    document.exitFullscreen();
+                }
+            }
+
+            updateFullscreenIcon() {
+                const isFullscreen = !!document.fullscreenElement;
+                this.fullscreenBtn.innerHTML = isFullscreen ? 
+                    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+                    </svg>` :
+                    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                    </svg>`;
+            }
+
+            cycleTheme() {
+                const currentIndex = this.themes.indexOf(this.currentTheme);
+                const nextIndex = (currentIndex + 1) % this.themes.length;
+                this.setTheme(this.themes[nextIndex]);
+            }
+
+            initTheme() {
+                const savedTheme = sessionStorage.getItem('deadlineTheme') || 'auto';
+                this.setTheme(savedTheme);
+            }
+
+            setTheme(theme) {
+                this.currentTheme = theme;
+                sessionStorage.setItem('deadlineTheme', theme);
+
+                if (theme === 'auto') {
+                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+                } else {
+                    document.documentElement.setAttribute('data-theme', theme);
+                }
+
+                this.updateThemeIcon(theme);
+            }
+
+            updateThemeIcon(theme) {
+                let icon;
+                if (theme === 'dark') {
+                    icon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>`;
+                } else if (theme === 'light') {
+                    icon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="4"/>
+                        <path d="m12 2 0 2"/>
+                        <path d="m12 20 0 2"/>
+                        <path d="m4.93 4.93 1.41 1.41"/>
+                        <path d="m17.66 17.66 1.41 1.41"/>
+                        <path d="M2 12h2"/>
+                        <path d="M20 12h2"/>
+                        <path d="m6.34 17.66-1.41 1.41"/>
+                        <path d="m19.07 4.93-1.41 1.41"/>
+                    </svg>`;
+                } else {
+                    icon = `<span class="auto-theme-icon">A</span>`;
+                }
+                this.themeBtn.innerHTML = icon;
+            }
+            
+            resetSession(clearAll) {
+                this.textArea.value = '';
+                this.resetFading();
+                
+                this.isSafe = false;
+                this.copyBtn.disabled = true;
+                this.safeIndicator.classList.remove('show');
+                this.safeIndicator.classList.remove('shift-up');
+
+                if (clearAll) {
+                    sessionStorage.removeItem('deadlineTitle');
+                    sessionStorage.removeItem('deadlineContent');
+                    sessionStorage.removeItem('deadlineIsSafe');
+                    sessionStorage.removeItem('deadlineTypingStartTime');
+                    sessionStorage.removeItem('deadlineLastInputTime');
+                } else {
+                    sessionStorage.setItem('deadlineContent', '');
+                    sessionStorage.removeItem('deadlineIsSafe');
+                    sessionStorage.removeItem('deadlineTypingStartTime');
+                    sessionStorage.removeItem('deadlineLastInputTime');
+                }
+            }
+
+            persistState() {
+                sessionStorage.setItem('deadlineTitle', this.titleInput.value);
+                sessionStorage.setItem('deadlineContent', this.textArea.value);
+                sessionStorage.setItem('deadlineIsSafe', this.isSafe);
+            }
+
+            loadState() {
+                const savedTitle = sessionStorage.getItem('deadlineTitle') || '';
+                const savedContent = sessionStorage.getItem('deadlineContent') || '';
+                const savedIsSafe = sessionStorage.getItem('deadlineIsSafe') === 'true'; 
+
+                this.titleInput.value = savedTitle;
+                this.textArea.value = savedContent;
+
+                if (savedIsSafe) {
+                    this.makeTextSafe();
+                    return;
+                }
+
+                if (savedContent) {
+                    const typingStartTime = sessionStorage.getItem('deadlineTypingStartTime');
+                    const lastInputTime = sessionStorage.getItem('deadlineLastInputTime');
+                    
+                    if (typingStartTime) {
+                        this.checkProtection();
+                    }
+
+                    if (lastInputTime) {
+                        const timeSinceLastInput = Date.now() - parseInt(lastInputTime, 10);
+                        if (timeSinceLastInput >= this.FADE_DELAY) {
+                            this.textArea.value = '';
+                            this.showLostIndicator();
+                            this.resetSession(false);
+                        } else {
+                            let startTime = Date.now() - timeSinceLastInput;
+                            
+                            this.fadeInterval = setInterval(() => {
+                                if (this.textArea.value.length === 0) {
+                                    clearInterval(this.fadeInterval);
+                                    this.resetSession(false);
+                                    return;
+                                }
+
+                                const elapsed = Date.now() - startTime;
+                                const progress = Math.min(elapsed / this.FADE_DELAY, 1);
+                                
+                                this.textArea.style.opacity = 1 - progress;
+                                
+                                const lastFiveSeconds = this.FADE_DELAY - 5000;
+                                if (elapsed >= lastFiveSeconds) {
+                                    const blurProgress = (elapsed - lastFiveSeconds) / 5000;
+                                    this.textArea.style.filter = `blur(${blurProgress * 3}px)`;
+                                }
+                                
+                                if (progress >= 1) {
+                                    clearInterval(this.fadeInterval);
+                                    this.textArea.value = '';
+                                    this.showLostIndicator();
+                                    this.resetSession(false);
+                                }
+                            }, 50);
+                        }
+                    }
+                }
+            }
+        }
+        
+        window.deadlineEditor = new DeadlineEditor();
+    </script>
+</body>
+</html>
